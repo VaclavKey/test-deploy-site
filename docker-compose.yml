@@ -13,14 +13,14 @@ services:
       - frontend
     networks:
       - dev
-    
-
   backend:
     build:
       context: ./backend
     networks:
       - dev
-
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
   frontend:
     build:
       context: ./frontend
