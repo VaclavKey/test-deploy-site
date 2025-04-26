@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: "main"
+    branches: [ "main" ]
   pull_request:
-    branches: "main"
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -17,7 +17,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub (optional, if your image is private)
-        if: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
+        if: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -78,7 +78,9 @@ jobs:
 
   deploy:
     needs: [build, test]
-    runs-on: ${{ secrets.SERVER_OS || 'ubuntu-latest' }} # Позволяет задать OS сервера как секрет
+    runs-on: ${{ env.SERVER_OS || 'ubuntu-latest' }}
+    env:
+      SERVER_OS: ${{ secrets.SERVER_OS }}
     steps:
       - name: SSH to server and deploy
         uses: appleboy/ssh-action@v1
