@@ -20,7 +20,7 @@ function App() {
 
   return (
     <>
-      <h1>CI/CD pashet!!!</h1>
+      <h1>CI/CD pashet!</h1>
       {items && items.map(item => {
         return <span style={{padding:'0px 4px'}} key={item.name} className="roll-out">
           <img src={item.img} alt='logo' width="16" style={{padding:'0px 5px'}}></img>
