@@ -9,9 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [backend, frontend, nginx]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,14 +22,32 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push ${{ matrix.service }} image
+      - name: Build and push Backend Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.service }}
+          context: ./backend
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
+
+      - name: Build and push Frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/frontend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/frontend:latest
+
+      - name: Build and push Nginx Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nginx
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/nginx:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/nginx:latest
 
   test:
     needs: build
@@ -46,14 +61,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Restore GitHub Actions cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install dependencies
         working-directory: ./backend
         run: pip install -r requirements.txt
@@ -62,7 +69,7 @@ jobs:
         working-directory: ./backend
         run: |
           echo "No tests configured yet."
-          # Тут можно заменить на pytest или unittest, если появятся тесты
+          # Здесь можно запускать python -m unittest или pytest
 
   deploy:
     needs: [build, test]
@@ -77,8 +84,8 @@ jobs:
           port: ${{ secrets.SERVER_PORT || '22' }}
           script: |
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/nginx:${{ github.sha }}
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/backend:${{ github.sha }}
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/frontend:${{ github.sha }}
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/nginx:${{ github.sha }}
             docker-compose down
             docker-compose up -d
